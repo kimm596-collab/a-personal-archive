@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>A Personal Archive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,300;0,9..40,400;1,9..40,300&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --white: #FFFFFF;
+    --black: #111111;
+    --muted: #BBBBBB;
+    --hint: #DDDDDD;
+    --surface: #F6F6F6;
+    --divider: #EFEFEF;
+    --text2: #666666;
+  }
+
+  body {
+    background: #E8E8E8;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: 'DM Sans', -apple-system, 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* PHONE FRAME */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: var(--white);
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.08);
+  }
+
+  /* SCREENS */
+  .screen {
+    position: absolute; inset: 0;
+    padding: 60px 28px 40px;
+    overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+    background: var(--white);
+  }
+  .screen.active { opacity: 1; pointer-events: all; }
+
+  /* STATUS BAR */
+  .status {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 52px; padding: 16px 28px 0;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 10; background: var(--white);
+  }
+  .status-time { font-size: 13px; font-weight: 400; color: var(--black); letter-spacing: -0.01em; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { opacity: 0.7; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 80px; padding: 12px 0 24px;
+    display: flex; justify-content: space-around; align-items: center;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    border-top: 0.5px solid var(--divider);
+    z-index: 10;
+  }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; padding: 4px 20px; border-radius: 12px;
+    transition: background 0.15s;
+    border: none; background: none;
+  }
+  .nav-btn:active { background: var(--surface); }
+  .nav-label { font-size: 10px; font-weight: 300; color: var(--muted); letter-spacing: 0.03em; }
+  .nav-label.active-label { color: var(--black); font-weight: 400; }
+  .nav-icon { opacity: 0.3; transition: opacity 0.15s; }
+  .nav-icon.active-icon { opacity: 1; }
+
+  /* TYPOGRAPHY */
+  .screen-time { font-size: 11px; font-weight: 300; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px; margin-top: 8px; }
+  .screen-title { font-size: 32px; font-weight: 200; color: var(--black); letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 4px; }
+  .screen-sub { font-size: 13px; font-weight: 300; color: var(--muted); margin-bottom: 28px; }
+
+  /* FIELD LABEL */
+  .field-label { font-size: 10px; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+
+  /* DIVIDER LINE */
+  .line { border: none; border-top: 0.5px solid var(--divider); margin: 0; }
+
+  /* ---- TODAY SCREEN ---- */
+  .photo-upload {
+    border: 0.5px dashed var(--hint);
+    border-radius: 14px;
+    height: 180px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    margin-bottom: 24px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #FAFAFA;
+    overflow: hidden;
+    position: relative;
+  }
+  .photo-upload:active { border-color: var(--muted); background: var(--surface); }
+  .photo-upload img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; border-radius: 14px; }
+  .photo-upload-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--hint); font-weight: 400; }
+  .photo-upload-sub { font-size: 11px; color: var(--hint); font-weight: 300; }
+  #photo-input { display: none; }
+
+  .words-area {
+    width: 100%; border: none; outline: none; resize: none;
+    font-size: 15px; font-weight: 300; color: var(--black);
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    line-height: 1.75; padding: 0; background: transparent;
+    min-height: 80px;
+  }
+  .words-area::placeholder { color: var(--hint); }
+
+  .emotion-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 0;
+  }
+  .emotion-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 400; flex-shrink: 0; }
+  .emotion-tag {
+    padding: 4px 12px; border-radius: 20px;
+    background: var(--black); color: var(--white);
+    font-size: 11px; font-weight: 300; letter-spacing: 0.03em;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .emotion-tag.visible { opacity: 1; }
+  .emotion-hint { font-size: 10px; color: var(--hint); font-weight: 300; }
+
+  .song-add-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 0;
+  }
+  .song-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .song-dot:active { background: var(--divider); }
+  .song-dot.playing { background: var(--black); }
+  .song-dot.playing svg path { fill: white; }
+  .song-info { flex: 1; }
+  .song-title-t { font-size: 13px; font-weight: 300; color: var(--black); }
+  .song-artist-t { font-size: 11px; color: var(--muted); font-weight: 300; }
+  .song-placeholder { font-size: 13px; font-weight: 300; color: var(--hint); cursor: pointer; }
+
+  .add-btn {
+    width: 100%; padding: 14px;
+    background: var(--black); color: var(--white);
+    border: none; border-radius: 26px;
+    font-size: 13px; font-weight: 300; letter-spacing: 0.04em;
+    cursor: pointer; margin-top: 24px;
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .add-btn:active { opacity: 0.8; transform: scale(0.99); }
+
+  /* ---- ARCHIVE SCREEN ---- */
+  .archive-header { margin-bottom: 20px; }
+  .month-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .month-label { font-size: 13px; font-weight: 300; color: var(--black); }
+  .month-arrows { display: flex; gap: 16px; }
+  .month-arrow { font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px; background: none; border: none; font-family: inherit; }
+  .month-arrow:active { color: var(--black); }
+
+  .photo-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+    border-radius: 14px; overflow: hidden;
+  }
+  .grid-cell {
+    aspect-ratio: 1; background: var(--surface);
+    position: relative; overflow: hidden; cursor: pointer;
+  }
+  .grid-cell img { width: 100%; height: 100%; object-fit: cover; }
+  .grid-cell-placeholder { width: 100%; height: 100%; background: var(--surface); }
+  .cell-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 50%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 6px 7px;
+  }
+  .cell-date { font-size: 9px; color: rgba(255,255,255,0.9); font-weight: 300; }
+  .cell-emotion { font-size: 8px; color: rgba(255,255,255,0.7); font-style: italic; }
+  .cell-empty-overlay {
+    position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 6px 7px;
+  }
+  .cell-empty-date { font-size: 9px; color: var(--hint); font-weight: 300; }
+
+  .archive-count { font-size: 12px; color: var(--muted); font-weight: 300; text-align: center; margin-top: 14px; }
+
+  /* ---- FELT SCREEN ---- */
+  .felt-section { margin-bottom: 28px; }
+  .felt-section-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 10px; border-bottom: 0.5px solid var(--divider);
+    margin-bottom: 12px;
+  }
+  .felt-emotion-name { font-size: 14px; font-weight: 300; color: var(--black); }
+  .felt-count { font-size: 11px; color: var(--muted); font-weight: 300; }
+
+  .felt-day {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 0.5px solid #FAFAFA;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .felt-day:active { opacity: 0.6; }
+  .felt-thumb { width: 40px; height: 40px; border-radius: 8px; background: var(--surface); flex-shrink: 0; overflow: hidden; }
+  .felt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .felt-day-date { font-size: 12px; font-weight: 300; color: var(--black); margin-bottom: 2px; }
+  .felt-day-note { font-size: 11px; color: var(--muted); font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+
+  /* ---- DAY DETAIL SCREEN ---- */
+  .back-btn {
+    font-size: 13px; font-weight: 300; color: var(--muted);
+    cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 4px;
+    background: none; border: none; font-family: inherit; padding: 0;
+  }
+  .back-btn:active { color: var(--black); }
+  .detail-emotion { display: inline-block; padding: 3px 10px; border-radius: 14px; background: var(--black); color: var(--white); font-size: 10px; font-weight: 300; letter-spacing: 0.04em; margin-bottom: 10px; }
+  .detail-date { font-size: 10px; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 6px; font-weight: 300; }
+  .detail-title { font-size: 22px; font-weight: 200; color: var(--black); letter-spacing: -0.02em; margin-bottom: 18px; line-height: 1.2; }
+  .detail-photo { width: 100%; height: 200px; border-radius: 14px; background: var(--surface); margin-bottom: 18px; overflow: hidden; }
+  .detail-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .detail-note { font-size: 14px; font-weight: 300; color: var(--text2); line-height: 1.8; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 0.5px solid var(--divider); }
+  .detail-song { display: flex; align-items: center; gap: 10px; }
+  .detail-song-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--surface); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .detail-song-title { font-size: 12px; font-weight: 300; color: var(--text2); }
+  .detail-song-artist { font-size: 11px; color: var(--muted); }
+
+  /* SONG PICKER SHEET */
+  .sheet-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.3);
+    z-index: 20; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .sheet-overlay.visible { opacity: 1; pointer-events: all; }
+  .sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--white); border-radius: 24px 24px 0 0;
+    padding: 20px 28px 40px;
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    z-index: 21;
+  }
+  .sheet.visible { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; background: var(--divider); border-radius: 2px; margin: 0 auto 20px; }
+  .sheet-title { font-size: 13px; font-weight: 400; color: var(--black); margin-bottom: 16px; }
+  .song-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 0.5px solid var(--divider);
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .song-option:active { opacity: 0.6; }
+  .song-option:last-child { border-bottom: none; }
+  .song-opt-dot { width: 36px; height: 36px; border-radius: 8px; background: var(--surface); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .song-opt-title { font-size: 13px; font-weight: 300; color: var(--black); margin-bottom: 1px; }
+  .song-opt-artist { font-size: 11px; color: var(--muted); }
+
+  /* SAVED TOAST */
+  .toast {
+    position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--black); color: var(--white);
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 12px; font-weight: 300; letter-spacing: 0.03em;
+    opacity: 0; transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none; white-space: nowrap; z-index: 30;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* SCROLLBAR HIDE */
+  .screen::-webkit-scrollbar { display: none; }
+  .screen { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* FADE IN */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .screen.active > * { animation: fadeUp 0.3s ease forwards; }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+
+  <!-- STATUS BAR -->
+  <div class="status">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <rect x="0" y="3" width="3" height="9" rx="1" fill="#111"/>
+        <rect x="4.5" y="2" width="3" height="10" rx="1" fill="#111"/>
+        <rect x="9" y="0" width="3" height="12" rx="1" fill="#111"/>
+        <rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#111" opacity="0.2"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <path d="M8 3C10.2 3 12.2 3.9 13.6 5.4L15 4C13.2 2.1 10.7 1 8 1C5.3 1 2.8 2.1 1 4L2.4 5.4C3.8 3.9 5.8 3 8 3Z" fill="#111"/>
+        <path d="M8 6C9.4 6 10.6 6.6 11.5 7.5L12.9 6.1C11.6 4.8 9.9 4 8 4C6.1 4 4.4 4.8 3.1 6.1L4.5 7.5C5.4 6.6 6.6 6 8 6Z" fill="#111"/>
+        <circle cx="8" cy="10" r="1.5" fill="#111"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+        <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111" stroke-opacity="0.35"/>
+        <rect x="2" y="2" width="16" height="8" rx="2" fill="#111"/>
+        <path d="M23 4.5V7.5C23.8 7.2 24.5 6.7 24.5 6C24.5 5.3 23.8 4.8 23 4.5Z" fill="#111" opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ===== TODAY SCREEN ===== -->
+  <div class="screen active" id="screen-today">
+    <div class="screen-time" id="today-date-label">Thursday · March 26</div>
+    <div class="screen-title">Today</div>
+    <div class="screen-sub" id="today-sub">nothing kept yet</div>
+
+    <div class="photo-upload" id="photo-upload-area" onclick="document.getElementById('photo-input').click()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="5" width="20" height="15" rx="3" stroke="#CCCCCC" stroke-width="1"/>
+        <circle cx="12" cy="12.5" r="3.5" stroke="#CCCCCC" stroke-width="1"/>
+        <path d="M8.5 5V4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1" stroke="#CCCCCC" stroke-width="1"/>
+      </svg>
+      <div class="photo-upload-label">Photo archive</div>
+      <div class="photo-upload-sub">one photo for today</div>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)">
+
+    <div class="field-label">Words</div>
+    <textarea class="words-area" id="words-input" placeholder="a few words about today..." oninput="handleWords(this)"></textarea>
+
+    <hr class="line" style="margin: 14px 0;">
+
+    <div class="emotion-row">
+      <div class="emotion-lbl">Felt</div>
+      <div class="emotion-tag" id="emotion-tag">tender</div>
+      <div class="emotion-hint" id="emotion-hint" style="opacity:0;transition:opacity 0.3s;">based on what you wrote</div>
+    </div>
+
+    <hr class="line">
+
+    <div style="margin-top: 14px;">
+      <div class="field-label">Song</div>
+      <div class="song-add-row">
+        <div class="song-dot" id="song-dot" onclick="openSheet()">
+          <svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#CCCCCC"/></svg>
+        </div>
+        <div class="song-info" id="song-display">
+          <div class="song-placeholder" onclick="openSheet()">what were you listening to?</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="add-btn" onclick="saveToday()">add to archive</button>
+  </div>
+
+  <!-- ===== ARCHIVE SCREEN ===== -->
+  <div class="screen" id="screen-archive">
+    <div class="screen-time" style="margin-top:8px;">your days</div>
+    <div class="screen-title">Archive</div>
+    <div class="screen-sub" id="archive-sub">march 2026</div>
+
+    <div class="month-nav">
+      <div class="month-label" id="archive-month">March 2026</div>
+      <div class="month-arrows">
+        <button class="month-arrow" onclick="changeMonth(-1)">‹</button>
+        <button class="month-arrow" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+
+    <div class="photo-grid" id="archive-grid"></div>
+    <div class="archive-count" id="archive-count"></div>
+  </div>
+
+  <!-- ===== FELT SCREEN ===== -->
+  <div class="screen" id="screen-felt">
+    <div class="screen-time" style="margin-top:8px;">your days by emotion</div>
+    <div class="screen-title">Felt</div>
+    <div class="screen-sub" id="felt-sub">— days</div>
+    <div id="felt-sections"></div>
+  </div>
+
+  <!-- ===== DAY DETAIL SCREEN ===== -->
+  <div class="screen" id="screen-detail">
+    <button class="back-btn" id="detail-back" onclick="goBack()">← back</button>
+    <div class="detail-emotion" id="detail-emotion">tender</div>
+    <div class="detail-date" id="detail-date"></div>
+    <div class="detail-title" id="detail-title"></div>
+    <div class="detail-photo" id="detail-photo"></div>
+    <div class="detail-note" id="detail-note"></div>
+    <div class="detail-song">
+      <div class="detail-song-dot">
+        <svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#CCCCCC"/></svg>
+      </div>
+      <div>
+        <div class="detail-song-title" id="detail-song-title"></div>
+        <div class="detail-song-artist" id="detail-song-artist"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('today')">
+      <svg class="nav-icon active-icon" id="nav-icon-today" width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="3" y="3" width="16" height="16" rx="3" stroke="#111" stroke-width="1.2"/>
+        <circle cx="11" cy="11" r="3" stroke="#111" stroke-width="1.2"/>
+        <path d="M7.5 3V2.2A1.3 1.3 0 0 1 8.8 1h4.4A1.3 1.3 0 0 1 14.5 2.2V3" stroke="#111" stroke-width="1.2"/>
+      </svg>
+      <span class="nav-label active-label" id="nav-label-today">Today</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('archive')">
+      <svg class="nav-icon" id="nav-icon-archive" width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="2" y="4" width="6" height="6" rx="1.5" stroke="#111" stroke-width="1.2"/>
+        <rect x="2" y="12" width="6" height="6" rx="1.5" stroke="#111" stroke-width="1.2"/>
+        <rect x="10" y="4" width="6" height="6" rx="1.5" stroke="#111" stroke-width="1.2"/>
+        <rect x="10" y="12" width="6" height="6" rx="1.5" stroke="#111" stroke-width="1.2"/>
+      </svg>
+      <span class="nav-label" id="nav-label-archive">Archive</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('felt')">
+      <svg class="nav-icon" id="nav-icon-felt" width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 18C11 18 3 13.5 3 8.5C3 6 5 4 7.5 4C9 4 10.2 4.8 11 6C11.8 4.8 13 4 14.5 4C17 4 19 6 19 8.5C19 13.5 11 18 11 18Z" stroke="#111" stroke-width="1.2"/>
+      </svg>
+      <span class="nav-label" id="nav-label-felt">Felt</span>
+    </button>
+  </div>
+
+  <!-- SONG SHEET -->
+  <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()">
+    <div class="sheet" id="song-sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">what were you listening to?</div>
+      <div class="song-option" onclick="selectSong('Savior Complex', 'Phoebe Bridgers')">
+        <div class="song-opt-dot"><svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#BBBBBB"/></svg></div>
+        <div><div class="song-opt-title">Savior Complex</div><div class="song-opt-artist">Phoebe Bridgers</div></div>
+      </div>
+      <div class="song-option" onclick="selectSong('Lua', 'Bright Eyes')">
+        <div class="song-opt-dot"><svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#BBBBBB"/></svg></div>
+        <div><div class="song-opt-title">Lua</div><div class="song-opt-artist">Bright Eyes</div></div>
+      </div>
+      <div class="song-option" onclick="selectSong('Motion Picture Soundtrack', 'Radiohead')">
+        <div class="song-opt-dot"><svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#BBBBBB"/></svg></div>
+        <div><div class="song-opt-title">Motion Picture Soundtrack</div><div class="song-opt-artist">Radiohead</div></div>
+      </div>
+      <div class="song-option" onclick="selectSong('Nude', 'Radiohead')">
+        <div class="song-opt-dot"><svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#BBBBBB"/></svg></div>
+        <div><div class="song-opt-title">Nude</div><div class="song-opt-artist">Radiohead</div></div>
+      </div>
+      <div class="song-option" onclick="selectSong('Casimir Pulaski Day', 'Sufjan Stevens')">
+        <div class="song-opt-dot"><svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#BBBBBB"/></svg></div>
+        <div><div class="song-opt-title">Casimir Pulaski Day</div><div class="song-opt-artist">Sufjan Stevens</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">added to archive</div>
+
+</div>
+
+<script>
+// ---- STATE ----
+const emotions = ['tender','restless','still','heavy','light'];
+const emotionWords = {
+  tender: ['soft','good','nice','love','warm','calm','gentle','grateful','peace','quiet','cozy'],
+  restless: ['anxious','couldn\'t','unsettled','strange','weird','busy','rushed','much','tired','waiting'],
+  heavy: ['sad','hard','difficult','miss','lonely','empty','lost','hurt','pain','down','bad'],
+  light: ['great','happy','amazing','wonderful','fun','excited','energy','alive','bright','free','joy'],
+  still: ['stayed','quiet','slow','read','sat','nothing','home','rest','simple','just','okay']
+};
+
+let state = {
+  currentScreen: 'today',
+  prevScreen: 'archive',
+  photo: null,
+  words: '',
+  emotion: null,
+  song: null,
+  entries: [
+    { date: 'March 20', dateObj: new Date(2026,2,20), title: 'called my mom.', note: 'No reason really. Just wanted to hear her voice. We talked for an hour about nothing important.', emotion: 'tender', song: 'Lua', artist: 'Bright Eyes', photo: null },
+    { date: 'March 19', dateObj: new Date(2026,2,19), title: 'the long walk.', note: "Couldn't sit still all day. Left at 4pm and just walked. The city felt manageable for once.", emotion: 'restless', song: 'Nude', artist: 'Radiohead', photo: null },
+    { date: 'March 18', dateObj: new Date(2026,2,18), title: 'stayed in.', note: "Didn't go anywhere. Made soup. Watched the light change outside all afternoon.", emotion: 'still', song: 'Motion Picture Soundtrack', artist: 'Radiohead', photo: null },
+    { date: 'March 17', dateObj: new Date(2026,2,17), title: 'good coffee morning.', note: 'Made coffee before looking at my phone for once. That felt like a small victory.', emotion: 'light', song: 'Savior Complex', artist: 'Phoebe Bridgers', photo: null },
+    { date: 'March 15', dateObj: new Date(2026,2,15), title: 'something shifted.', note: "Can't explain it. Just felt different by evening. Not better, not worse. Different.", emotion: 'heavy', song: 'Casimir Pulaski Day', artist: 'Sufjan Stevens', photo: null },
+    { date: 'March 14', dateObj: new Date(2026,2,14), title: 'the window light.', note: 'Sat by the window for an hour doing nothing. The light was really something.', emotion: 'tender', song: 'Lua', artist: 'Bright Eyes', photo: null },
+    { date: 'March 12', dateObj: new Date(2026,2,12), title: 'lunch outside.', note: 'Ate outside for the first time this year. Forty degrees but felt worth it.', emotion: 'light', song: 'Savior Complex', artist: 'Phoebe Bridgers', photo: null },
+    { date: 'March 10', dateObj: new Date(2026,2,10), title: 'quiet evening.', note: 'Read for two hours without stopping. Forgot that was still possible.', emotion: 'still', song: 'Motion Picture Soundtrack', artist: 'Radiohead', photo: null },
+  ]
+};
+
+// ---- NAVIGATION ----
+function showScreen(name) {
+  if (name === 'detail') {
+    state.prevScreen = state.currentScreen;
+  }
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  state.currentScreen = name;
+
+  // Nav bar
+  ['today','archive','felt'].forEach(n => {
+    document.getElementById('nav-icon-' + n).classList.toggle('active-icon', n === name);
+    document.getElementById('nav-label-' + n).classList.toggle('active-label', n === name);
+  });
+
+  if (name === 'archive') renderArchive();
+  if (name === 'felt') renderFelt();
+}
+
+function goBack() {
+  showScreen(state.prevScreen);
+}
+
+// ---- TODAY ----
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.photo = e.target.result;
+    const area = document.getElementById('photo-upload-area');
+    area.innerHTML = `<img src="${e.target.result}" alt="today">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleWords(el) {
+  state.words = el.value;
+  const words = el.value.toLowerCase().split(/\s+/);
+  let detected = null;
+  for (const [em, kws] of Object.entries(emotionWords)) {
+    if (words.some(w => kws.includes(w))) { detected = em; break; }
+  }
+  if (!detected && el.value.length > 10) detected = emotions[Math.floor(Math.random() * emotions.length)];
+  const tag = document.getElementById('emotion-tag');
+  const hint = document.getElementById('emotion-hint');
+  if (detected) {
+    state.emotion = detected;
+    tag.textContent = detected;
+    tag.classList.add('visible');
+    hint.style.opacity = '1';
+  } else {
+    tag.classList.remove('visible');
+    hint.style.opacity = '0';
+  }
+}
+
+function openSheet() { 
+  document.getElementById('sheet-overlay').classList.add('visible');
+  document.getElementById('song-sheet').classList.add('visible');
+}
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('visible');
+  document.getElementById('song-sheet').classList.remove('visible');
+}
+function selectSong(title, artist) {
+  state.song = { title, artist };
+  document.getElementById('song-display').innerHTML = `
+    <div class="song-title-t">${title}</div>
+    <div class="song-artist-t">${artist}</div>
+  `;
+  const dot = document.getElementById('song-dot');
+  dot.classList.add('playing');
+  dot.innerHTML = `<svg width="8" height="8" viewBox="0 0 8 8" fill="none"><rect x="1" y="1" width="2.5" height="6" rx="1" fill="white"/><rect x="4.5" y="1" width="2.5" height="6" rx="1" fill="white"/></svg>`;
+  closeSheet();
+}
+
+function saveToday() {
+  const words = document.getElementById('words-input').value.trim();
+  if (!words && !state.photo) { showToast('add a photo or some words first'); return; }
+  const firstLine = words.split(/[.!?\n]/)[0].trim().toLowerCase() || 'a quiet day.';
+  const emotion = state.emotion || emotions[Math.floor(Math.random()*emotions.length)];
+  const today = new Date(2026,2,26);
+  state.entries.unshift({
+    date: 'March 26',
+    dateObj: today,
+    title: firstLine + (firstLine.endsWith('.') ? '' : '.'),
+    note: words || 'no words today.',
+    emotion,
+    song: state.song?.title || null,
+    artist: state.song?.artist || null,
+    photo: state.photo
+  });
+  showToast('added to archive');
+  document.getElementById('today-sub').textContent = '1 thing kept';
+  setTimeout(() => showScreen('archive'), 900);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ---- ARCHIVE ----
+let archiveMonth = new Date(2026,2,1);
+function changeMonth(dir) {
+  archiveMonth = new Date(archiveMonth.getFullYear(), archiveMonth.getMonth() + dir, 1);
+  renderArchive();
+}
+
+const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function renderArchive() {
+  const month = archiveMonth.getMonth();
+  const year = archiveMonth.getFullYear();
+  const label = monthNames[month] + ' ' + year;
+  document.getElementById('archive-month').textContent = label;
+
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const grid = document.getElementById('archive-grid');
+  grid.innerHTML = '';
+
+  const monthEntries = state.entries.filter(e => e.dateObj.getMonth() === month && e.dateObj.getFullYear() === year);
+  const count = monthEntries.length;
+  document.getElementById('archive-sub').textContent = label.toLowerCase();
+  document.getElementById('archive-count').textContent = count > 0 ? count + ' day' + (count !== 1 ? 's' : '') + ' kept' : 'no days kept this month';
+
+  // Show last 18 days max
+  const days = Array.from({length: Math.min(daysInMonth, 18)}, (_,i) => daysInMonth - i).reverse();
+  days.forEach(day => {
+    const entry = monthEntries.find(e => e.dateObj.getDate() === day);
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell';
+    if (entry) {
+      if (entry.photo) {
+        cell.innerHTML = `<img src="${entry.photo}" alt="">`;
+      } else {
+        const colors = {tender:'#D8D0C8',restless:'#E0D4C4',still:'#D0CCE0',heavy:'#D4D8E0',light:'#C8D4C8'};
+        cell.style.background = colors[entry.emotion] || '#E8E8E8';
+      }
+      cell.innerHTML += `<div class="cell-overlay"><div class="cell-date">${monthNames[month].slice(0,3)} ${day}</div><div class="cell-emotion">${entry.emotion}</div></div>`;
+      cell.onclick = () => openDetail(entry);
+    } else {
+      cell.innerHTML = `<div class="cell-empty-overlay"><div class="cell-empty-date">${day}</div></div>`;
+    }
+    grid.appendChild(cell);
+  });
+}
+
+// ---- FELT ----
+function renderFelt() {
+  const sections = document.getElementById('felt-sections');
+  sections.innerHTML = '';
+  const total = state.entries.length;
+  document.getElementById('felt-sub').textContent = total + ' day' + (total !== 1 ? 's' : '') + ' remembered';
+
+  emotions.forEach(em => {
+    const days = state.entries.filter(e => e.emotion === em);
+    if (!days.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'felt-section';
+    sec.innerHTML = `<div class="felt-section-header"><span class="felt-emotion-name">${em}</span><span class="felt-count">${days.length} day${days.length !== 1 ? 's' : ''}</span></div>`;
+    days.forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'felt-day';
+      const colors = {tender:'#D8D0C8',restless:'#E0D4C4',still:'#D0CCE0',heavy:'#D4D8E0',light:'#C8D4C8'};
+      row.innerHTML = `
+        <div class="felt-thumb" style="background:${colors[entry.emotion]};">${entry.photo ? `<img src="${entry.photo}">` : ''}</div>
+        <div>
+          <div class="felt-day-date">${entry.date}</div>
+          <div class="felt-day-note">${entry.note}</div>
+        </div>`;
+      row.onclick = () => openDetail(entry);
+      sec.appendChild(row);
+    });
+    sections.appendChild(sec);
+  });
+}
+
+// ---- DETAIL ----
+function openDetail(entry) {
+  document.getElementById('detail-emotion').textContent = entry.emotion;
+  document.getElementById('detail-date').textContent = entry.date;
+  document.getElementById('detail-title').textContent = entry.title;
+  document.getElementById('detail-note').textContent = entry.note;
+
+  const photo = document.getElementById('detail-photo');
+  const colors = {tender:'#D8D0C8',restless:'#E0D4C4',still:'#D0CCE0',heavy:'#D4D8E0',light:'#C8D4C8'};
+  if (entry.photo) {
+    photo.innerHTML = `<img src="${entry.photo}" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    photo.style.background = colors[entry.emotion] || '#ECECEC';
+    photo.innerHTML = '';
+  }
+
+  document.getElementById('detail-song-title').textContent = entry.song || '—';
+  document.getElementById('detail-song-artist').textContent = entry.artist || '';
+  document.getElementById('detail-back').textContent = '← ' + (state.currentScreen === 'felt' ? 'felt' : 'archive');
+
+  showScreen('detail');
+}
+
+// INIT
+renderArchive();
+renderFelt();
+</script>
+</body>
+</html>
